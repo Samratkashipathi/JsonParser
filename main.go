@@ -47,7 +47,7 @@ func (p *Parser) Parse() (JSON, error) {
 	value, err := p.parseValue()
 
 	if err != nil {
-		fmt.Println("Error while parsing the value")
+		fmt.Printf("Error while parsing the value. Pos %d\n", p.pos)
 		return nil, err
 	}
 
@@ -119,6 +119,10 @@ func (p *Parser) parseObject() (JSON, error) {
 		}
 
 		obj[key] = value
+
+		if p.input[p.pos] == ValueSeparator {
+			p.pos++
+		}
 	}
 }
 
@@ -174,8 +178,6 @@ func (p *Parser) parseLiteral(literal string) (interface{}, error) {
 		switch current {
 		case ValueSeparator, EndArray, EndObject:
 			foundLiteral := p.input[start:p.pos]
-
-			fmt.Println()
 
 			if foundLiteral != literal {
 				return false, &ParseError{msg: fmt.Sprintf("Expected boolean false, got %q", foundLiteral), pos: p.pos}
