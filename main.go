@@ -61,7 +61,7 @@ func (p *Parser) Parse() (JSON, error) {
 	return nil, nil
 }
 
-// TODO: Integer, Boolean
+// TODO: Integer
 func (p *Parser) parseValue() (JSON, error) {
 	p.skipWhiteSpace()
 
@@ -180,10 +180,19 @@ func (p *Parser) parseLiteral(literal string) (interface{}, error) {
 			foundLiteral := p.input[start:p.pos]
 
 			if foundLiteral != literal {
-				return false, &ParseError{msg: fmt.Sprintf("Expected boolean false, got %q", foundLiteral), pos: p.pos}
+				return nil, &ParseError{msg: fmt.Sprintf("Expected %q, got %q", literal, foundLiteral), pos: p.pos}
 			}
 
-			return foundLiteral, nil
+			switch literal {
+			case "true":
+				return true, nil
+			case "false":
+				return false, nil
+			case "null":
+				return nil, nil
+			}
+
+			return nil, &ParseError{msg: fmt.Sprintf("Expected %q, got %q", literal, foundLiteral), pos: p.pos}
 		default:
 			p.pos++
 		}
@@ -197,7 +206,7 @@ func (p *Parser) skipWhiteSpace() {
 }
 
 func main() {
-	s := `{"a": {"b": false}, "c": true}`
+	s := `{"a": {"b": false}, "c": true, "d" : ["1", null]}`
 	p := NewParser(s)
 	p.Parse()
 }
