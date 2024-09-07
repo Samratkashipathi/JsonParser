@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"strconv"
+)
 
 // https://datatracker.ietf.org/doc/html/rfc8259#page-5
 const (
@@ -61,7 +64,6 @@ func (p *Parser) Parse() (JSON, error) {
 	return nil, nil
 }
 
-// TODO: Integer
 func (p *Parser) parseValue() (JSON, error) {
 	p.skipWhiteSpace()
 
@@ -80,6 +82,8 @@ func (p *Parser) parseValue() (JSON, error) {
 		return p.parseLiteral("true")
 	case 'n':
 		return p.parseLiteral("null")
+	case 48, 49, 50, 51, 52, 53, 54, 55, 56, 57:
+		return p.parseNumber()
 	default:
 		return nil, nil
 	}
@@ -199,6 +203,20 @@ func (p *Parser) parseLiteral(literal string) (interface{}, error) {
 	}
 }
 
+func (p *Parser) parseNumber() (int, error) {
+	start := p.pos
+	for {
+		switch p.input[p.pos] {
+		case 48, 49, 50, 51, 52, 53, 54, 55, 56, 57:
+			p.pos++
+		case ValueSeparator, EndArray, EndObject:
+			return strconv.Atoi(p.input[start:p.pos])
+		default:
+			return 0, &ParseError{msg: fmt.Sprintf("Expected digit, got %q", p.input[p.pos]), pos: p.pos}
+		}
+	}
+}
+
 func (p *Parser) skipWhiteSpace() {
 	for p.pos < len(p.input) && p.input[p.pos] == ' ' {
 		p.pos = p.pos + 1
@@ -206,7 +224,7 @@ func (p *Parser) skipWhiteSpace() {
 }
 
 func main() {
-	s := `{"a": {"b": false}, "c": true, "d" : ["1", null]}`
+	s := `{"a": {"b": false}, "c": true, "d" : [1, null]}`
 	p := NewParser(s)
 	p.Parse()
 }
