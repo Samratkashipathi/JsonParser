@@ -76,10 +76,10 @@ func (p *Parser) parseValue() (JSON, error) {
 		return p.parseArray()
 	case 'f':
 		return p.parseLiteral("false")
-	// case 't':
-	// 	return p.parseLiteral("true")
-	// case 'n':
-	// 	return p.parseLiteral("null")
+	case 't':
+		return p.parseLiteral("true")
+	case 'n':
+		return p.parseLiteral("null")
 	default:
 		return nil, nil
 	}
@@ -173,13 +173,15 @@ func (p *Parser) parseLiteral(literal string) (interface{}, error) {
 		current := p.input[p.pos]
 		switch current {
 		case ValueSeparator, EndArray, EndObject:
-			falseLiteral := p.input[start:p.pos]
+			foundLiteral := p.input[start:p.pos]
 
-			if falseLiteral != literal {
-				return false, &ParseError{msg: fmt.Sprintf("Expected boolean false, got %q", falseLiteral), pos: p.pos}
+			fmt.Println()
+
+			if foundLiteral != literal {
+				return false, &ParseError{msg: fmt.Sprintf("Expected boolean false, got %q", foundLiteral), pos: p.pos}
 			}
 
-			return falseLiteral, nil
+			return foundLiteral, nil
 		default:
 			p.pos++
 		}
@@ -193,7 +195,7 @@ func (p *Parser) skipWhiteSpace() {
 }
 
 func main() {
-	s := `{"a": {"b": false}}`
+	s := `{"a": {"b": false}, "c": true}`
 	p := NewParser(s)
 	p.Parse()
 }
