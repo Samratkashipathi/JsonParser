@@ -63,7 +63,7 @@ func (p *Parser) Parse() (JSON, error) {
 	return value, nil
 }
 
-// TODO: Space, Escape characters, String with new line, Large numbers
+// TODO: Escape characters, String with new line, Large numbers
 func (p *Parser) parseValue() (JSON, error) {
 	p.skipWhiteSpace()
 
@@ -123,6 +123,8 @@ func (p *Parser) parseObject() (JSON, error) {
 		}
 
 		obj[key] = value
+
+		p.skipWhiteSpace()
 
 		if p.input[p.pos] == EndObject {
 			continue
@@ -242,13 +244,27 @@ func (p *Parser) parseNumber() (interface{}, error) {
 }
 
 func (p *Parser) skipWhiteSpace() {
-	for p.pos < len(p.input) && p.input[p.pos] == ' ' {
-		p.pos = p.pos + 1
+	for p.pos < len(p.input) {
+		switch p.input[p.pos] {
+		case ' ', '\n', '\t', '\r':
+			p.pos++
+		default:
+			return
+		}
 	}
 }
 
 func main() {
-	s := `{"a": {"b": false}, "c": true, "d" : [-1, null], "e": [], "f": {}}`
+	s := `{
+		"name": "John Doe",
+		"age": 30,
+		"verified": false,
+		"friends": ["Jane", "James", "Jake"],
+		"address": {
+			"city": "New York",
+			"state": "NY"
+		}
+	}`
 	p := NewParser(s)
 	parsedJSON, err := p.Parse()
 
