@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"strconv"
+	"strings"
 )
 
 // https://datatracker.ietf.org/doc/html/rfc8259#page-5
@@ -50,7 +51,6 @@ func (p *Parser) Parse() (JSON, error) {
 	value, err := p.parseValue()
 
 	if err != nil {
-		fmt.Printf("Error while parsing the value. Pos %d\n", p.pos)
 		return nil, err
 	}
 
@@ -60,8 +60,7 @@ func (p *Parser) Parse() (JSON, error) {
 		return nil, err
 	}
 
-	fmt.Println(value)
-	return nil, nil
+	return value, nil
 }
 
 func (p *Parser) parseValue() (JSON, error) {
@@ -82,7 +81,7 @@ func (p *Parser) parseValue() (JSON, error) {
 		return p.parseLiteral("true")
 	case 'n':
 		return p.parseLiteral("null")
-	case 48, 49, 50, 51, 52, 53, 54, 55, 56, 57:
+	case 45, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57:
 		return p.parseNumber()
 	default:
 		return nil, nil
@@ -203,14 +202,32 @@ func (p *Parser) parseLiteral(literal string) (interface{}, error) {
 	}
 }
 
-func (p *Parser) parseNumber() (int, error) {
+// https://datatracker.ietf.org/doc/html/rfc8259#section-6
+// number = [ minus ] int [ frac ] [ exp ]
+
+// 45 -> `-` (Negative number)
+// 46 -> `.` (Decimal Number)
+// 48-57 -> 0-9
+func (p *Parser) parseNumber() (interface{}, error) {
 	start := p.pos
+	decimalFound := false
+
 	for {
 		switch p.input[p.pos] {
-		case 48, 49, 50, 51, 52, 53, 54, 55, 56, 57:
+		case 45, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57:
 			p.pos++
+		case 46:
+			if decimalFound {
+				return 0, &ParseError{msg: fmt.Sprintf("Expected digit, got %q", p.input[p.pos]), pos: p.pos}
+			}
+			p.pos++
+			decimalFound = true
 		case ValueSeparator, EndArray, EndObject:
-			return strconv.Atoi(p.input[start:p.pos])
+			val := p.input[start:p.pos]
+			if decimalFound {
+				return strconv.ParseFloat(strings.TrimSpace(val), 64)
+			}
+			return strconv.Atoi(val)
 		default:
 			return 0, &ParseError{msg: fmt.Sprintf("Expected digit, got %q", p.input[p.pos]), pos: p.pos}
 		}
@@ -224,7 +241,13 @@ func (p *Parser) skipWhiteSpace() {
 }
 
 func main() {
-	s := `{"a": {"b": false}, "c": true, "d" : [1, null]}`
+	s := `{"a": {"b": false}, "c": true, "d" : [-1, null]}`
 	p := NewParser(s)
-	p.Parse()
+	parsedJSON, err := p.Parse()
+
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	fmt.Println(parsedJSON)
 }
