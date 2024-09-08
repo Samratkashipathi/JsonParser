@@ -124,9 +124,15 @@ func (p *Parser) parseObject() (JSON, error) {
 
 		obj[key] = value
 
-		if p.input[p.pos] == ValueSeparator {
-			p.pos++
+		if p.input[p.pos] == EndObject {
+			continue
 		}
+
+		if p.input[p.pos] != ValueSeparator {
+			return nil, &ParseError{msg: "expected , after", pos: p.pos}
+		}
+
+		p.pos++
 	}
 }
 
@@ -242,7 +248,7 @@ func (p *Parser) skipWhiteSpace() {
 }
 
 func main() {
-	s := `{"a": {"b": false}, "c": true, "d" : [-1, null]}`
+	s := `{"a": {"b": false}, "c": true, "d" : [-1, null], "e": [], "f": {}}`
 	p := NewParser(s)
 	parsedJSON, err := p.Parse()
 
