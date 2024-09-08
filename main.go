@@ -63,6 +63,7 @@ func (p *Parser) Parse() (JSON, error) {
 	return value, nil
 }
 
+// TODO: Space,Escape characters, Large numbers
 func (p *Parser) parseValue() (JSON, error) {
 	p.skipWhiteSpace()
 
